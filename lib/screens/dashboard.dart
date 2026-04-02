@@ -13,6 +13,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isTokenValid = false;
+  String? _userId;
+
   bool _isLoadingToken = true;
 
   String _engineStatus = 'Unknown';
@@ -30,10 +32,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isLoadingToken = true);
     try {
       final response = await widget.apiService.getTokenStatus();
+
+      print("TOKEN STATUS RESPONSE: $response");
+
       setState(() {
-        _isTokenValid = response['valid'] ?? false;
+        // _isTokenValid = response['valid'] ?? false; 
+        // _isTokenValid = response['token_status'] == 'VALID';
+        _isTokenValid = response['has_access_token'] == true;
+        _userId = response['user_id'];
       });
     } catch (e) {
+      print("TOKEN STATUS ERROR: $e");
       setState(() => _isTokenValid = false);
     } finally {
       setState(() => _isLoadingToken = false);
@@ -42,10 +51,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _fetchEngineStatus() async {
     setState(() => _isLoadingEngineStatus = true);
+
     try {
       final response = await widget.apiService.getEngineStatus();
+
+      print("ENGINE STATUS RESPONSE: $response");
+
       setState(() {
-        _engineStatus = response['status'] ?? 'Stopped';
+        _engineStatus = (response['status'] ?? 'Stopped').toLowerCase();
       });
     } catch (e) {
       setState(() => _engineStatus = 'Error');
@@ -54,39 +67,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _performEngineAction(Future<void> Function() action, String successMsg) async {
+  // Future<void> _performEngineAction(Future<void> Function() action, String successMsg) async {
+  //   if (_isEngineActionRunning) return;
+    
+  //   setState(() => _isEngineActionRunning = true);
+    
+  //   try {
+  //     await action();
+  //     if (!mounted) return;
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(successMsg), backgroundColor: Colors.green),
+  //     );
+  //     await _fetchEngineStatus();
+  //   } catch (e) {
+  //     if (!mounted) return;
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+  //     );
+  //   } finally {
+  //     if (mounted) setState(() => _isEngineActionRunning = false);
+  //   }
+  // }
+  Future<void> _performEngineAction(
+    Future<void> Function() action,
+    String successMsg,
+  ) async {
     if (_isEngineActionRunning) return;
-    
+
     setState(() => _isEngineActionRunning = true);
-    
+
     try {
       await action();
+
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(successMsg), backgroundColor: Colors.green),
       );
+
+      await Future.delayed(const Duration(milliseconds: 500)); // 🔥 ADD THIS
       await _fetchEngineStatus();
+
     } catch (e) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isEngineActionRunning = false);
     }
   }
 
+  //update UI after success
+  // void _navigateToLogin() async {
+  //   final success = await Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (_) => WebviewLoginScreen(apiService: widget.apiService),
+  //     ),
+  //   );
+  //   if (success == true) {
+  //     await Future.delayed(const Duration(seconds: 1));
+
+  //     await _fetchTokenStatus();
+  //     await _fetchEngineStatus();
+  //   }
+  // }
   void _navigateToLogin() async {
-    final success = await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => WebviewLoginScreen(apiService: widget.apiService),
       ),
     );
-    if (success == true) {
-      _fetchTokenStatus();
-      _fetchEngineStatus();
+
+    if (result != null && result is Map<String, dynamic>) {
+      print("LOGIN RESULT: $result");
+
+      setState(() {
+        _isTokenValid = result['token_status'] == 'VALID';
+        _userId = result['user_id'];
+      });
     }
+
+    // Then sync with backend
+    await _fetchTokenStatus();
   }
 
   @override
@@ -149,6 +215,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (_userId != null)
+                        Text(
+                          "User: $_userId",
+                          style: const TextStyle(fontSize: 14),
+                        ),
                     ],
                   ),
             const SizedBox(height: 20),
@@ -167,7 +238,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildEngineSection() {
-    final isRunning = _engineStatus.toLowerCase() == 'running';
+    // final isRunning = _engineStatus.toLowerCase() == 'running';
+    final isRunning = _engineStatus == 'running';
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -199,6 +272,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
             const SizedBox(height: 20),
+
+            if (!_isTokenValid)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  "⚠ Please connect Zerodha first",
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+
             Wrap(
               spacing: 12.0,
               runSpacing: 12.0,
@@ -209,21 +292,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Icons.play_arrow,
                   Colors.green,
                   () => _performEngineAction(widget.apiService.startEngine, 'Engine Started'),
-                  disabled: isRunning || _isEngineActionRunning,
+                  // disabled: isRunning || _isEngineActionRunning,
+                  disabled: !_isTokenValid || isRunning || _isEngineActionRunning,
                 ),
                 _buildActionButton(
                   'Stop Engine',
                   Icons.stop,
                   Colors.red,
                   () => _performEngineAction(widget.apiService.stopEngine, 'Engine Stopped'),
-                  disabled: !isRunning || _isEngineActionRunning,
+                  // disabled: !isRunning || _isEngineActionRunning,
+                  disabled: !_isTokenValid || !isRunning || _isEngineActionRunning,
                 ),
                 _buildActionButton(
                   'Restart Engine',
                   Icons.refresh,
                   Colors.orange,
                   () => _performEngineAction(widget.apiService.restartEngine, 'Engine Restarted'),
-                  disabled: _isEngineActionRunning,
+                  // disabled: _isEngineActionRunning,
+                  disabled: !_isTokenValid || _isEngineActionRunning,
                 ),
               ],
             ),

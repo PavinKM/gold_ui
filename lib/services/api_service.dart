@@ -3,27 +3,58 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.0.2.2:8000/api/v1';
+  static const String baseUrl = 'http://178.156.146.28:8088/api/v1';
+  static const String adminToken = 'Test';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   Future<Map<String, String>> _getHeaders() async {
-    String? token = await _storage.read(key: 'x_admin_token');
     return {
       'Content-Type': 'application/json',
-      if (token != null) 'X-Admin-Token': token,
+      'X-Admin-Token': adminToken,
     };
   }
 
   Future<void> saveToken(String token) async {
-    await _storage.write(key: 'x_admin_token', value: token);
+    await _storage.write(key: 'zerodha_access_token', value: token);
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: 'x_admin_token');
+    return await _storage.read(key: 'zerodha_access_token');
   }
 
   Future<void> clearToken() async {
-    await _storage.delete(key: 'x_admin_token');
+    await _storage.delete(key: 'zerodha_access_token');
+  }
+
+  // Future<bool> getHealth() async {
+  //   final url = Uri.parse('$baseUrl/healthz');
+  //   try {
+  //     final response = await http.get(url);
+  //     return response.statusCode == 200;
+  //   } catch (_) {
+  //     return false;
+  //   }
+  // }
+
+  Future<bool> getHealth() async {
+    final url = Uri.parse('$baseUrl/healthz');
+
+    try {
+      final response = await http.get(url);
+
+      print("Status: ${response.statusCode}");
+      print("Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['ok'] == true;
+      }
+
+      return false;
+    } catch (e) {
+      print("ERROR: $e");
+      return false;
+    }
   }
 
   Future<Map<String, dynamic>> exchangeToken(String requestToken) async {
@@ -60,6 +91,18 @@ class ApiService {
       return json.decode(response.body);
     } else {
       throw Exception('Failed to load engine status: ${response.statusCode}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getEngineHealth() async {
+    final url = Uri.parse('$baseUrl/engine/health');
+    final headers = await _getHeaders();
+
+    final response = await http.get(url, headers: headers);
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load engine health: ${response.statusCode}');
     }
   }
 
