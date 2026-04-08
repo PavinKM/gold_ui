@@ -136,6 +136,80 @@ class ApiService {
     }
   }
 
+  // Future<List<dynamic>> getPositions() async {
+  //   final url = Uri.parse('$baseUrl/api/v1/engine/open-position');
+
+  //   try {
+  //     final response = await http.get(url);
+
+  //     print("POSITIONS STATUS: ${response.statusCode}");
+  //     print("POSITIONS BODY: ${response.body}");
+
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+
+  //       // 🔥 handle multiple formats safely
+  //       if (data is List) {
+  //         return data;
+  //       } else if (data['data'] != null) {
+  //         return data['data'];
+  //       } else if (data['positions'] != null) {
+  //         return data['positions'];
+  //       } else {
+  //         return [];
+  //       }
+  //     } else {
+  //       throw Exception("Failed to fetch positions");
+  //     }
+  //   } catch (e) {
+  //     print("ERROR: $e");
+  //     throw Exception("Error fetching positions");
+  //   }
+  // }
+  // Future<List<dynamic>> getPositions() async {
+  //   final url = Uri.parse('$baseUrl/api/v1/engine/open-position');
+
+  //   final response = await http.get(
+  //     url,
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       "X-Admin-Token": adminToken, // 🔥 ADD THIS
+  //     },
+  //   );
+
+  //   print("POSITIONS STATUS: ${response.statusCode}");
+  //   print("POSITIONS BODY: ${response.body}");
+
+  //   if (response.statusCode == 200) {
+  //     return jsonDecode(response.body);
+  //   } else {
+  //     throw Exception("Failed to fetch positions");
+  //   }
+  // }
+
+  Future<Map<String, dynamic>> getPositions() async {
+    // final url = Uri.parse('$baseUrl/api/v1/engine/open-position');
+    final url = Uri.parse('$baseUrl/engine/open-position');
+
+    final response = await http.get(
+      url,
+      headers: {
+        "accept": "application/json", // ✅ IMPORTANT
+        "X-Admin-Token": "Test",      // ✅ EXACT SAME as curl
+      },
+    );
+
+    print("URL: $url");
+    print("STATUS: ${response.statusCode}");
+    print("BODY: ${response.body}");
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to fetch positions");
+    }
+  }
+
   Future<List<String>> getLogs({int lines = 200}) async {
     final url = Uri.parse('$baseUrl/logs/recent?lines=$lines');
     final headers = await _getHeaders();
