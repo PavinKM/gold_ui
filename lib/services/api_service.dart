@@ -210,6 +210,24 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getEngineState() async {
+    final url = Uri.parse('$baseUrl/engine/setup-state/mock?symbol=GOLD&scenario=tracking');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Token': adminToken, // already "Test"
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load engine state: ${response.body}');
+    }
+  }
+
   Future<List<String>> getLogs({int lines = 200}) async {
     final url = Uri.parse('$baseUrl/logs/recent?lines=$lines');
     final headers = await _getHeaders();

@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import 'webview_login.dart';
 import 'logs_screen.dart';
 import '../screens/PositionsScreen.dart';
+import '../screens/engine_state_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ApiService apiService;
@@ -150,6 +151,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 40),
               // _buildNavigationButtons(),
               _buildPositionsButton(),
+              const SizedBox(height: 12),
+              _buildEngineStateButton(),
               const SizedBox(height: 12),
               _buildNavigationButtons(),
             ],
@@ -443,6 +446,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
         icon: const Icon(Icons.show_chart),
         label: const Text("VIEW POSITIONS"),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          foregroundColor: primaryBlue,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEngineStateButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EngineStateScreen(apiService: widget.apiService),
+            ),
+          );
+        },
+        icon: const Icon(Icons.analytics), // 🔥 better icon for engine data
+        label: const Text("VIEW ENGINE STATE"),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          foregroundColor: primaryBlue,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
       ),
     );
   }
