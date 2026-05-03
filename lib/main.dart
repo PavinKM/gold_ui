@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'services/api_service.dart';
+
 import 'screens/dashboard.dart';
+import 'services/api_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,8 +12,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Inject ApiService
-    final apiService = ApiService();
+    final AdminApi apiService = ApiService();
 
     return MaterialApp(
       title: 'Admin Dashboard',
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      themeMode: ThemeMode.system, // Supports dark and light mode
+      themeMode: ThemeMode.system,
       home: DashboardScreen(apiService: apiService),
     );
   }
