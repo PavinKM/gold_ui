@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
     final AdminApi apiService = ApiService();
 
     return MaterialApp(
-      title: 'Admin Dashboard',
+      title: 'Gold UI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
